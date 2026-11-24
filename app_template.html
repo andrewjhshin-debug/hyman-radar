@@ -1,0 +1,253 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>하이먼 레이더</title>
+<meta name="description" content="버블이 어디쯤인지, 하이먼 민스키 단계로 한눈에. 코스피·나스닥·대형주의 단계와 좌절 예측치.">
+<meta name="theme-color" content="#0b0e14"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta property="og:title" content="하이먼 레이더"><meta property="og:description" content="버블이 어디쯤인지, 하이먼 민스키 단계로 한눈에"><meta property="og:image" content="icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
+<style>
+/* 레이아웃: 아래 탭(차트·바·하) + 위 고정 머리줄. 차트·하는 2칸 격자(한 화면에 여러 개), 바는 한 줄씩. 꾹 눌러 순서 바꾸기 */
+:root{color-scheme:dark;--bg:#0b0e14;--card:#131927;--card2:#1a2236;--line:#222a3d;--fg:#eef1fb;--sub:#8b94ae;--dim:#5f6884;--acc:#3ddc84;--warn:#ffb300;--bad:#ff4d5e;--kakao:#fee500;--kakao-fg:#191600;
+  --sans:'Noto Sans KR',Pretendard,system-ui,'Malgun Gothic',sans-serif}
+[hidden]{display:none!important}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;align-items:center;gap:10px;padding-block:12px 8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:var(--bg)}
+.logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#3ddc84,#1c8f57);display:grid;place-items:center;font-weight:800;color:#06140c;flex:none}
+.top h1{font-size:18px;margin:0;font-weight:800;letter-spacing:-.02em}.top small{display:block;color:var(--sub);font-size:12px}
+.sp1{flex:1}.ic{width:34px;height:34px;border-radius:50%;border:1.5px solid #3a4562;background:none;cursor:pointer;display:grid;place-items:center;flex:none}
+.ic svg{width:17px;height:17px;fill:none;stroke:var(--fg);stroke-width:1.8}.ic.on{border-color:var(--acc)}.ic.on svg{stroke:var(--acc)}.ib{font:700 15px Georgia,serif}
+main{padding-block:0 96px;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));max-width:720px;margin:0 auto}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.grid.one{grid-template-columns:minmax(0,1fr)}
+@media(min-width:640px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.grid.one{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.hero{background:radial-gradient(120% 90% at 70% 0%,#1b2a3f,var(--card) 60%);border:1px solid var(--line);border-radius:16px;padding:12px 12px 10px;margin-bottom:8px}
+.hero summary{list-style:none;display:flex;align-items:center;gap:8px;cursor:pointer}.hero summary::-webkit-details-marker{display:none}
+.hero h2{margin:0;font-size:17px;font-weight:800;letter-spacing:-.02em}.hero .sum{font-size:13px;margin-left:auto;white-space:nowrap}
+.hero summary::after{content:'▾';color:var(--sub);font-size:13px}.hero[open] summary::after{content:'▴'}
+.msvg{width:100%;height:auto;display:block;margin-top:6px}.hn{fill:#0b0e14;font-size:9.5px;font-weight:800}.hs{fill:#6f7a99;font-size:10px}
+.lg{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:13px;margin:4px 0 2px}.lg span{display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;min-width:0}
+.lg i{font-style:normal;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;color:#0b0e14;font-weight:800;font-size:11px;flex:none}.lg em{font-style:normal;color:var(--sub);font-size:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 10px 8px;min-width:0;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:pan-y}
+.card:active{background:var(--card2)}.card.drag{border-color:var(--warn);box-shadow:0 8px 24px #000a;transform:scale(1.03);z-index:3;position:relative;touch-action:none}
+.card header{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap}.card h3{margin:0;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.chip{font-size:11.5px;font-weight:700;color:var(--c);background:color-mix(in srgb,var(--c) 15%,transparent);border-radius:99px;padding:1px 8px;white-space:nowrap}
+.px{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;font-size:14px}
+.cell svg{width:100%;height:auto;display:block;overflow:visible;margin:14px 0 12px}
+.cell .mk-np{font-size:13px}.cell .mk-zp{font-size:12px}
+.meta{display:flex;flex-wrap:wrap;gap:2px 10px;margin:2px 0 0;font-size:12.5px;color:var(--sub)}.meta b{color:var(--fg);font-variant-numeric:tabular-nums}.meta .r{margin-left:auto}
+.ddl{font-weight:700;color:#cfd6ea;font-variant-numeric:tabular-nums}
+.up{color:var(--acc)!important}.dn{color:var(--bad)!important}
+.sp{width:100%;height:70px;display:block;margin-top:6px}
+.mk-c{fill:none;stroke:#2f8f4e;stroke-width:6;stroke-linejoin:round;stroke-linecap:round}.mk-m{stroke:#56607e;stroke-width:1.2;stroke-dasharray:3 3}
+.mk-p{fill:none;stroke:var(--bad);stroke-width:2.4;stroke-linejoin:round}.mk-d{fill:var(--warn);stroke:#0b0e14;stroke-width:1.5}
+.mk-np{fill:var(--warn);font-size:9px;font-weight:700;paint-order:stroke;stroke:var(--card);stroke-width:3px;stroke-linejoin:round}.np-lo{fill:#16bdd0;font-size:.82em;font-weight:400}.mk-zp{fill:#e8ecff;font-size:8px;text-anchor:middle;paint-order:stroke;stroke:var(--card);stroke-width:3.5px}
+.mk-pk{fill:var(--bad)}.mk-zd{fill:var(--acc);stroke:#0b0e14;stroke-width:1.5}.mk-pd{fill:var(--bad)}
+.bar header{margin-bottom:6px}.tg-t{margin-left:auto;font-size:13px;color:var(--sub);background:none;border:1px solid var(--line);border-radius:8px;padding:2px 8px;cursor:pointer;white-space:nowrap}
+.tg-t b{color:var(--fg)}.gauge{position:relative;height:30px;border-radius:8px;background:#1d2538;overflow:hidden}
+.gauge i{position:absolute;left:0;top:0;bottom:0;border-radius:8px;background:var(--gc);display:flex;align-items:center;padding-left:8px;min-width:var(--mw);color:#06090f;font-style:normal;font-weight:800;font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tin{width:7.5em;padding:3px 6px;border-radius:7px;border:1px solid var(--acc);background:#0e1320;color:var(--fg);font:inherit;font-size:13px}
+.add{width:100%;padding:12px;border-radius:14px;border:1.5px dashed #3a4562;background:none;color:var(--sub);font-weight:600;font-size:14px;cursor:pointer;margin-top:8px}
+.tile{border:2px solid var(--bc);padding:10px 10px 8px}.tile h3{color:var(--bc)}
+.tile .pr{display:flex;align-items:baseline;gap:8px;margin:2px 0 4px;flex-wrap:wrap}.tile .pr b{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}.tile .pr span{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.rise{color:#ff4d5e}.fall{color:#4c8dff}
+.vw{display:flex;gap:4px;margin:2px 0 4px}.vw button{flex:1;padding:4px 0;border-radius:7px;border:1px solid var(--line);background:none;color:var(--sub);font-size:12.5px;font-weight:700;cursor:pointer}.vw button.on{background:#1e2840;color:var(--fg);border-color:#3a4562}
+.cs{width:100%;height:auto;display:block}.cs text{font-size:9px;fill:var(--sub);font-variant-numeric:tabular-nums}
+.tgl{height:6px;border-radius:99px;background:#1d2538;overflow:hidden;margin:6px 0 4px}.tgl i{display:block;height:100%;background:var(--bc);border-radius:99px}
+.bar{border:2px solid var(--bc)}.bar h3{color:var(--bc)}.bpct{margin-left:auto;font-size:22px;font-weight:800;color:var(--bc);font-variant-numeric:tabular-nums}
+.bends{display:flex;justify-content:space-between;font-size:12px;color:var(--sub);margin-top:4px}.bends b{color:var(--fg);font-variant-numeric:tabular-nums}
+.bexp{font-size:12.5px;color:var(--sub);background:#0e1320;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;line-height:1.6}
+.bexp svg{width:100%;height:auto;display:block;margin:6px 0 2px}
+#tab-avg{position:absolute;margin-left:4px;font-size:11px;font-weight:800;font-style:normal}nav button{position:relative}
+.hint{font-size:12px;color:var(--dim);margin:6px 2px 0;text-align:center}
+.note{font-size:12px;color:var(--dim);line-height:1.6;margin:12px 4px}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;background:#0e131ef2;border-top:1px solid var(--line);padding:6px max(0px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(0px,env(safe-area-inset-left,0px));-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+nav button{flex:1;background:none;border:0;color:#6a7391;font-weight:700;font-size:13px;padding:4px;cursor:pointer}nav button b{display:block;font-size:19px;line-height:1.3}nav button.on{color:var(--acc)}
+.sheet{position:fixed;inset:0;z-index:20;background:#000b;display:flex;align-items:flex-end;justify-content:center}
+.sheet>div{background:#141a29;border:1px solid var(--line);border-radius:20px 20px 0 0;width:100%;max-width:600px;padding:20px max(18px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));max-height:88vh;overflow:auto}
+.sheet h2{margin:0 0 10px;font-size:19px;text-wrap:balance}.sheet h4{margin:14px 0 4px;font-size:15px}.sheet p,.sheet li{color:#c4cbe0;font-size:14px}.sheet ul{padding-left:18px;margin:4px 0}
+.sheet .cell svg{margin:18px 0 16px}.sheet .cell .mk-np{font-size:10px}.sheet .cell .mk-zp{font-size:9px}
+.cta{width:100%;margin-top:14px;padding:13px;border:0;border-radius:12px;background:var(--acc);color:#06140c;font-weight:800;font-size:16px;cursor:pointer}
+.x{float:right;background:none;border:0;color:var(--sub);font-size:24px;line-height:1;cursor:pointer}
+.row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line)}.row:last-child{border-bottom:0}.row span{flex:1;min-width:0}.row small{color:var(--sub)}
+.tg{appearance:none;width:44px;height:26px;border-radius:99px;background:#2a3350;position:relative;cursor:pointer;flex:none;margin:0}
+.tg::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#cfd6ea;transition:left .15s}.tg:checked{background:var(--acc)}.tg:checked::after{left:21px;background:#06140c}
+.seg{display:flex;gap:6px;margin:6px 0 10px}.seg button{flex:1;padding:8px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--sub);cursor:pointer;font-weight:700}.seg button.on{border-color:var(--acc);color:var(--acc)}
+.srch{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#0e1320;color:var(--fg);font:inherit;margin-bottom:6px}
+.badge{display:inline-block;font-size:12px;font-weight:700;color:var(--acc);border:1px solid color-mix(in srgb,var(--acc) 50%,transparent);border-radius:99px;padding:1px 8px;vertical-align:middle}
+.seq{font-size:13px;color:var(--sub);line-height:1.8}.seq u{text-decoration:none;color:var(--c);font-weight:800}
+.why{background:#0e1320;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;color:#c4cbe0}
+.lk{background:none;border:0;padding:0;color:var(--sub);font:inherit;text-decoration:underline;cursor:pointer}
+.login{position:fixed;inset:0;z-index:30;background:radial-gradient(90% 60% at 50% 20%,#15283a,var(--bg) 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding-block:24px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));text-align:center}
+.login .logo{width:64px;height:64px;border-radius:18px;font-size:30px}.login h1{margin:4px 0 0;font-size:28px;font-weight:800;letter-spacing:-.03em}.login p{margin:0 0 6px;color:var(--sub);max-width:28ch}
+.login .msvg{max-width:320px;margin:0 0 8px}
+.lb{width:100%;max-width:340px;padding:14px;border-radius:12px;border:0;font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+.lb.k{background:var(--kakao);color:var(--kakao-fg)}.lb.a{background:#fff;color:#000}.lb.g{background:none;color:var(--sub);border:1px solid var(--line)}.lb svg{width:20px;height:20px}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#232c44;color:var(--fg);padding:9px 14px;border-radius:10px;font-size:14px;z-index:40;white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.tg::after{transition:none}.card.drag{transform:none}}
+</style>
+<div class="top"><div class="logo">H</div><div><h1>하이먼 레이더</h1><small id="stamp">버블 단계로 보는 시장</small></div><span class="sp1"></span>
+<button class="ic" id="bell" aria-label="알림 설정"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></button>
+<button class="ic ib" id="info" aria-label="사용법">i</button></div>
+<main>
+<section data-tab="chart" hidden></section>
+<section data-tab="bar" hidden></section>
+<section data-tab="ha" hidden></section>
+<p class="note">과거 주가 패턴을 하이먼 민스키 모델에 맞춰 보여주는 참고 자료이며 투자 권유나 자문이 아닙니다. 단계와 좌절 예측치는 통계적 추정으로 바뀔 수 있으며, 투자 판단과 결과의 책임은 이용자에게 있습니다. 시세는 지연될 수 있습니다. <span id="built"></span> <button class="lk" data-legal="terms">이용약관</button> · <button class="lk" data-legal="privacy">개인정보처리방침</button></p>
+</main>
+<nav><button data-go="chart"><b>▦</b>차트</button><button data-go="bar"><b>≡</b>바<em id="tab-avg"></em></button><button data-go="ha"><b>∿</b>하</button></nav>
+<div class="login" id="login" hidden>
+<div class="logo">H</div><h1>하이먼 레이더</h1><p>버블이 어디쯤인지, 하이먼 민스키 단계로 한눈에</p><div id="loginArt"></div>
+<button class="lb k" data-login="카카오"><svg viewBox="0 0 24 24"><path fill="#191600" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.9 5.3 4.7 6.7l-1 3.6c-.1.4.3.7.6.5l4.2-2.8c.5.1 1 .1 1.5.1 5.5 0 10-3.6 10-8S17.5 3 12 3z"/></svg>카카오로 시작하기</button>
+<button class="lb a" data-login="Apple"><svg viewBox="0 0 24 24"><path fill="#000" d="M16.4 12.6c0-2.4 2-3.5 2-3.6-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.8-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2.1-1.1 2.8-2.3.9-1.3 1.3-2.6 1.3-2.6s-2.5-1-2.5-3.7zM14.2 5.6c.6-.8 1.1-1.8 1-2.9-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.7-1 2.8 1 .1 2.1-.5 2.7-1.3z"/></svg>Apple로 계속하기</button>
+<button class="lb g" data-login="">로그인 없이 둘러보기</button>
+<p style="font-size:12px;margin-top:6px;color:var(--dim)">출시 기념: 로그인 없이 모든 기능 무료. 카카오·Apple 로그인은 곧 열려요.</p></div>
+<script>
+const D=__DATA__;
+const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const by=Object.fromEntries(D.items.map(i=>[i.k,i]));
+const ls=(k,v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem('hr_'+k));localStorage.setItem('hr_'+k,JSON.stringify(v));}catch(e){return null;}};
+const list=t=>(ls('list_'+t)||D.defaults[t]).filter(k=>by[k]);
+const pct=v=>(v>=0?'+':'')+(v*100).toFixed(Math.abs(v)<.1?1:0)+'%';
+const fmt=(v,ref)=>{const s=ref||'';const cur=s.startsWith('$')?'$':'';if(v>=1e8)return(v/1e8).toFixed(2)+'억';if(v>=1e6)return Math.round(v/1e4)+'만';if(v>=1e4&&!cur)return Math.round(v).toLocaleString();return cur+(v>=100?Math.round(v).toLocaleString():v.toFixed(2));};
+function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),1800);}
+const chip=i=>'<span class="chip" style="--c:'+i.col+'">'+i.stage+'</span>';
+function spark(c){if(c.length<2)return '';const lo=Math.min(...c),hi=Math.max(...c),W=320,H=90;
+  const p=c.map((v,j)=>(j/(c.length-1)*W).toFixed(1)+','+(H-6-(v-lo)/((hi-lo)||1)*(H-12)).toFixed(1)).join(' ');
+  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" class="sp"><polyline points="'+p+'" fill="none" stroke="'+(c[c.length-1]>=c[0]?'var(--acc)':'var(--bad)')+'" stroke-width="2.4" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>';}
+function model(dots){const M=D.model;return '<svg viewBox="0 0 340 170" class="msvg"><path d="'+M.curve+'" fill="none" stroke="#2f3a55" stroke-width="7" stroke-linecap="round"/>'+
+  '<line x1="'+M.trend[0]+'" y1="'+M.trend[1]+'" x2="'+M.trend[2]+'" y2="'+M.trend[3]+'" stroke="#56607e" stroke-dasharray="4 4"/>'+
+  M.labels.map(l=>'<text x="'+l[0]+'" y="'+l[1]+'" class="hs" text-anchor="middle">'+l[2]+'</text>').join('')+(dots||'')+'</svg>';}
+function heroDots(ks){const seen={};return ks.map((k,n)=>{const i=by[k],p=D.model.pos[i.st],c=seen[i.st]=(seen[i.st]||0)+1;
+  return '<circle cx="'+p[0]+'" cy="'+(p[1]-(c-1)*19)+'" r="8" fill="'+i.col+'" stroke="#0b0e14" stroke-width="2"/><text x="'+p[0]+'" y="'+(p[1]-(c-1)*19+3.6)+'" class="hn" text-anchor="middle">'+(n+1)+'</text>';}).join('');}
+const add=(t,label)=>'<button class="add" data-pick="'+t+'">＋ '+label+'</button><p class="hint">꾹 눌러서 끌면 순서가 바뀌어요</p>';
+const tgts=()=>ls('tgts')||{};
+function tgtOf(i){const t=tgts()[i.k];return t>0?t:(i.ap||0);}
+function barCardOld(k){const i=by[k],t=tgtOf(i),c=i.cl.slice(-26),hi=c.length?Math.max(...c,i.npv):i.npv;
+  const fill=t&&hi>t?Math.max(0,Math.min(1,(hi-i.npv)/(hi-t))):0,gap=t?t/i.npv-1:0,own=tgts()[k]>0;
+  const gc=fill>=1?'#1fb866':'hsl('+Math.round(fill*120)+',85%,55%)';
+  return '<article class="card bar" data-k="'+esc(k)+'"><header><h3>'+esc(k)+'</h3>'+chip(i)+'<button class="tg-t" data-tgt="'+esc(k)+'">'+(own?'목표':'좌절 예측치')+' <b>'+fmt(t,i.np)+'</b> ✎</button></header>'+
+    '<div class="gauge" style="--gc:'+gc+';--mw:'+(i.np.length+2)+'ch"><i style="width:'+(fill*100).toFixed(1)+'%">'+i.np+'</i></div>'+
+    '<p class="meta"><span>6개월 최고 <b>'+fmt(hi,i.np)+'</b></span><span class="r">'+(own?'목표':'좌절 예측치')+'까지 <b>'+pct(gap)+'</b></span></p></article>';}
+// 오리지날처럼: 테두리·이름 색 = 목표 가까울수록 빨강→초록, 240·일·주·월·년 봉, 목표선, 목표 게이지
+function prox(i){const t=tgtOf(i),c=i.cl.slice(-26),hi=c.length?Math.max(...c,i.npv):i.npv;return t&&hi>t?Math.max(0,Math.min(1,(hi-i.npv)/(hi-t))):(t&&i.npv<=t?1:0);}
+const pcol=f=>f>=1?'#1fb866':'hsl('+Math.round(f*120)+',85%,55%)';
+function barLeft(i,t){const c=i.cl.slice(-26),hi=c.length?Math.max(...c,i.npv):i.npv,lo=c.length?Math.min(...c):i.npv;
+  if(!t)return{hi,left:null};if(i.npv<t){const dp=Math.max(0,Math.min(1,lo>0&&lo<t?(t-i.npv)/(t-lo):(t-i.npv)/t/.3));return{hi,left:-dp};}
+  return{hi,left:hi>t?Math.max(0,Math.min(1,(i.npv-t)/(hi-t))):0};}
+const bcol=l=>l===null?'#3a4562':l<0?'#1fb866':'hsl('+Math.round((1-l)*120)+',85%,55%)';
+function barCard(k){const i=by[k],t=tgts()[k]>0?tgts()[k]:0,{hi,left}=barLeft(i,t),col=bcol(left),w=left===null?0:left<0?75+25*-left:left*100;
+  return '<article class="card bar" data-k="'+esc(k)+'" style="--bc:'+col+'"><header><h3>'+esc(k)+'</h3>'+chip(i)+'<span class="bpct">'+(t?pct(t/i.npv-1):'')+'</span></header>'+
+    '<div class="gauge" style="--gc:'+col+';--mw:'+(i.np.length+2)+'ch"><i style="width:'+w.toFixed(1)+'%'+(left===null?';background:none;color:var(--fg)':'')+'">'+i.np+'</i></div>'+
+    '<div class="bends"><span>6개월 최고 <b>'+fmt(hi,i.np)+'</b></span><button class="tg-t" data-tgt="'+esc(k)+'">'+(t?'목표가 <b>'+fmt(t,i.np)+'</b> ✎':'목표가 설정 ✎')+'</button></div></article>';}
+function candles(i,v){const d=i.oh&&i.oh[v];if(!d||!d.c.length)return '<p class="meta">이 봉은 자료가 없어요</p>';const n=d.c.length,W=340,H=170,R=40,t=tgtOf(i);
+  let lo=Math.min(...d.l),hi=Math.max(...d.h);if(t>0&&t<lo&&t>lo*.5)lo=t;if(t>0&&t>hi&&t<hi*1.5)hi=t;const pad=(hi-lo)*.06||1;lo-=pad;hi+=pad;
+  const y=p=>(H-14-(p-lo)/(hi-lo)*(H-24)),bw=(W-R)/n,cw=Math.max(1,bw*.65);let g='';
+  for(let j=0;j<n;j++){const o=d.o[j],c=d.c[j],x=(j*bw+bw/2).toFixed(1),cl=c>=o?'#ff4d5e':'#4c8dff';
+    g+='<line x1="'+x+'" x2="'+x+'" y1="'+y(d.h[j]).toFixed(1)+'" y2="'+y(d.l[j]).toFixed(1)+'" stroke="'+cl+'"/><rect x="'+(j*bw+(bw-cw)/2).toFixed(1)+'" y="'+y(Math.max(o,c)).toFixed(1)+'" width="'+cw.toFixed(1)+'" height="'+Math.max(.8,Math.abs(y(o)-y(c))).toFixed(1)+'" fill="'+cl+'"/>';}
+  const last=d.c[n-1],tl=t>lo&&t<hi?'<line x1="0" x2="'+(W-R)+'" y1="'+y(t).toFixed(1)+'" y2="'+y(t).toFixed(1)+'" stroke="var(--acc)" stroke-dasharray="5 4"/><text x="'+(W-R+3)+'" y="'+(y(t)+3).toFixed(1)+'" style="fill:var(--acc)">'+fmt(t,i.np)+'</text>':'';
+  return '<svg viewBox="0 0 '+W+' '+H+'" class="cs">'+g+'<line x1="0" x2="'+(W-R)+'" y1="'+y(last).toFixed(1)+'" y2="'+y(last).toFixed(1)+'" stroke="#ffb300" stroke-width=".8" stroke-dasharray="2 3"/>'+
+    '<text x="'+(W-R+3)+'" y="'+(y(last)+3).toFixed(1)+'" style="fill:#ffb300">'+fmt(last,i.np)+'</text><text x="'+(W-R+3)+'" y="12">'+fmt(Math.max(...d.h),i.np)+'</text><text x="'+(W-R+3)+'" y="'+(H-4)+'">'+fmt(Math.min(...d.l),i.np)+'</text>'+tl+
+    '<text x="0" y="'+(H-2)+'">'+(d.d[0]||'')+'</text><text x="'+(W-R)+'" y="'+(H-2)+'" text-anchor="end">'+(d.d[n-1]||'')+'</text></svg>';}
+function tile(k){const i=by[k],vs=ls('views')||{},v=vs[k]||'일',f=prox(i),t=tgtOf(i),own=tgts()[k]>0;
+  return '<article class="card tile" data-k="'+esc(k)+'" style="--bc:'+pcol(f)+'"><header><h3>'+esc(k)+'</h3>'+chip(i)+'</header>'+
+    '<div class="pr"><b>'+i.np+'</b><span class="'+(i.chg>=0?'rise':'fall')+'">'+(i.chg>=0?'▲ ':'▼ ')+(Math.abs(i.chg)*100).toFixed(2)+'%</span></div>'+
+    '<div class="vw">'+['240','일','주','월','년'].map(x=>'<button data-vw="'+x+'"'+(x===v?' class="on"':'')+'>'+x+'</button>').join('')+'</div>'+candles(i,v)+
+    '<div class="tgl"><i style="width:'+(f*100).toFixed(1)+'%"></i></div><p class="meta"><button class="tg-t" style="margin-left:0" data-tgt="'+esc(k)+'">'+(own?'목표가':'목표가(좌절 예측치)')+' <b>'+fmt(t,i.np)+'</b> ✎</button><span class="r">'+(t?'목표까지 <b>'+pct(t/i.npv-1)+'</b>':'')+'</span></p></article>';}
+const BAREXP='<div class="bexp"><b style="color:var(--fg)">막대 읽는 법</b><svg viewBox="0 0 320 50"><rect x="0" y="16" width="320" height="16" rx="5" fill="#1d2538"/><rect x="0" y="16" width="190" height="16" rx="5" fill="hsl(50,85%,55%)"/>'+
+  '<text x="0" y="10" font-size="10" fill="#3ddc84">◀ 목표가</text><text x="320" y="10" font-size="10" fill="#8b94ae" text-anchor="end">6개월 최고가</text><text x="250" y="46" font-size="10" fill="#eef1fb" text-anchor="middle">◀ 목표에 다가갈수록 깎여요</text></svg>'+
+  '막대 길이는 <b style="color:var(--fg)">목표가까지 남은 거리</b>예요. 6개월 최고가에 있으면 꽉 차고, 목표가로 내려갈수록 오른쪽에서 왼쪽으로 깎여서 목표에 닿으면 0이 돼요. 목표가 아래로 내려가면 진한 초록 막대로 바뀌어요. 오른쪽 숫자는 목표까지 남은 %, 색과 테두리는 빨강(멀다)→초록(가깝다)이에요.</div>';
+function paint(){
+  const H=list('ha'),cnt={};H.forEach(k=>cnt[by[k].grp]=(cnt[by[k].grp]||0)+1);
+  $('[data-tab=ha]').innerHTML='<details class="hero"'+(ls('heroOpen')===false?'':' open')+'><summary><h2>지금 시장은 어디쯤?</h2><span class="sum">'+
+    Object.entries(D.groups).filter(([g])=>cnt[g]).map(([g,c])=>'<b style="color:'+c+'">'+g+' '+cnt[g]+'</b>').join(' · ')+'</span></summary>'+model(heroDots(H))+
+    '<div class="lg">'+H.map((k,n)=>'<span><i style="background:'+by[k].col+'">'+(n+1)+'</i>'+esc(k)+' <em>'+by[k].stage+'</em></span>').join('')+'</div></details>'+
+    '<div class="grid" data-list="ha">'+H.map(k=>{const i=by[k];return '<article class="card" data-k="'+esc(k)+'"><header><h3>'+esc(k)+'</h3>'+chip(i)+'</header><div class="cell">'+i.svg+'</div>'+
+      '<p class="meta">'+(i.dd>0?'<span class="ddl">좌절까지 D-'+i.dd+'</span>':'')+(i.ap?'<span class="r">'+(i.az?'바닥 대비':'예측치까지')+' <b>'+pct(i.gp)+'</b></span>':'')+'</p></article>';}).join('')+'</div>'+add('ha','종목 추가');
+  $('[data-tab=chart]').innerHTML='<div class="grid one" data-list="chart">'+list('chart').map(tile).join('')+'</div>'+add('chart','차트 추가');
+  const B=list('bar');$('[data-tab=bar]').innerHTML=BAREXP+'<div class="grid one" data-list="bar">'+B.map(barCard).join('')+'</div>'+add('bar','바 추가');
+  const gs=B.map(k=>{const i=by[k],t=tgts()[k];return t>0?t/i.npv-1:null;}).filter(v=>v!==null),av=gs.length?gs.reduce((a,b)=>a+b,0)/gs.length:null;
+  $('#tab-avg').textContent=av===null?'':pct(av);$('#tab-avg').style.color=av===null?'':pcol(Math.max(0,1+av*2));
+  $('.hero').addEventListener('toggle',e=>ls('heroOpen',e.target.open));
+  $('#bell').classList.toggle('on',Object.values(ls('alerts')||{}).some(Boolean));
+}
+function go(t){document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.go===t));document.querySelectorAll('section[data-tab]').forEach(s=>s.hidden=s.dataset.tab!==t);ls('tab',t);scrollTo(0,0);}
+function sheet(html){const d=document.createElement('div');d.className='sheet';d.innerHTML='<div><button class="x" aria-label="닫기">×</button>'+html+'</div>';
+  d.addEventListener('click',e=>{if(e.target===d||e.target.closest('.x,[data-close]'))d.remove();});document.body.appendChild(d);return d;}
+function picker(t){const names0={ha:'하',chart:'차트',bar:'바'};
+  {const d=sheet('<h2>'+names0[t]+'에 추가</h2><p style="margin:0 0 8px;font-size:13px">코스피 1개는 가입만 하면 무료예요. 더할 때마다 1개당 월 990원, 무제한은 월 7,900원 예정이에요. <span class="badge">지금은 출시 기념 무료</span></p><input class="srch" id="pq" placeholder="이름 검색" autocomplete="off"><div id="pl"></div>');
+    const draw=q=>{const cur=list(t);d.querySelector('#pl').innerHTML=D.items.filter(i=>!q||i.k.toLowerCase().includes(q)).map(i=>{const has=cur.includes(i.k);return '<button class="row" style="width:100%;background:none;border:0;border-bottom:1px solid var(--line);text-align:left;cursor:pointer" data-addk="'+esc(i.k)+'"'+(has?' disabled':'')+'><span>'+esc(i.k)+' <small>'+i.stage+'</small></span><b style="color:'+(has?'var(--dim)':'var(--acc)')+'">'+(has?'있음':'＋')+'</b></button>';}).join('');};
+    draw('');d.querySelector('#pq').oninput=e=>draw(e.target.value.trim().toLowerCase());
+    d.addEventListener('click',e=>{const b=e.target.closest('[data-addk]');if(!b||b.disabled)return;ls('list_'+t,[...list(t),b.dataset.addk]);paint();d.remove();toast(b.dataset.addk+' 추가');});return;}
+let cur=new Set(list(t)),f='all',q='';const names={ha:'하',chart:'차트',bar:'바'};
+  const d=sheet('<h2>'+names[t]+'에 보일 것 고르기 <span class="badge">무료</span></h2><input class="srch" id="pq" placeholder="이름 검색" autocomplete="off"><div class="seg"><button data-f="all" class="on">전체</button><button data-f="macro">지표</button><button data-f="kr">한국</button><button data-f="us">미국</button></div><div id="pl"></div><button class="cta" data-close>완료</button>');
+  const draw=()=>{d.querySelector('#pl').innerHTML=D.items.filter(i=>(f==='all'||(f==='macro'?i.macro:!i.macro&&((f==='kr')===/\.K[SQ]$/.test(i.sym))))&&(!q||i.k.toLowerCase().includes(q))).map(i=>
+    '<label class="row"><span>'+esc(i.k)+' <small>'+i.stage+'</small></span><input type="checkbox" class="tg" data-k="'+esc(i.k)+'"'+(cur.has(i.k)?' checked':'')+'></label>').join('');};
+  draw();d.querySelector('#pq').oninput=e=>{q=e.target.value.trim().toLowerCase();draw();};
+  d.querySelector('.seg').onclick=e=>{const b=e.target.closest('button');if(!b)return;f=b.dataset.f;d.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x===b));draw();};
+  d.addEventListener('change',e=>{const k=e.target.dataset.k;if(!k)return;e.target.checked?cur.add(k):cur.delete(k);const old=list(t);ls('list_'+t,[...old.filter(x=>cur.has(x)),...[...cur].filter(x=>!old.includes(x))]);paint();});}
+function detail(k){const i=by[k],seq=D.stages.map((s,j)=>j===i.st?'<u style="--c:'+i.col+'">'+s+'</u>':s).join(' → ');
+  sheet('<h2>'+esc(k)+' '+chip(i)+'</h2><div class="cell">'+i.svg+'</div><p class="seq">'+seq+'</p>'+
+    '<div class="row"><span>새 논리 고점</span><b>'+(i.pk||'-')+'</b></div><div class="row"><span>좌절 예측치</span><b>'+(i.zz||'-')+'</b></div>'+
+    (i.dd>0?'<div class="row"><span>좌절까지</span><b>D-'+i.dd+'</b></div>':'')+'<div class="row"><span>곡선 일치율 <small>(높을수록 모델과 비슷)</small></span><b>'+i.fit+'%</b></div>'+
+    '<h4>근거 <span class="badge">무료</span></h4><div class="why">'+(esc(i.why)||'과거 사례 자료가 부족해 단계표로 추정했어요.')+'</div>'+
+    (i.rng?'<div class="why" style="white-space:pre-line;margin-top:8px">'+esc(i.rng)+'</div>':'')+'<p style="font-size:12px;color:var(--dim)">좌절 예측치는 지금과 닮은 과거 하락 사례들이 그 시점부터 더 빠진 폭을 모아, 가운데 절반을 평균한 값이에요. 범위를 같이 보세요. 맞는다는 보장은 없어요.</p>'+
+    '<button class="lb g" style="max-width:none;margin-top:10px" data-del="'+esc(k)+'" data-close>지금 탭에서 빼기</button>');}
+function editTgt(k,b){b=b||document.querySelector('section:not([hidden]) [data-tgt="'+CSS.escape(k)+'"]');if(!b)return;const i=by[k];
+  b.outerHTML='<input class="tin" id="tin" inputmode="decimal" placeholder="목표가" value="'+(tgts()[k]||'')+'">';const inp=$('#tin');inp.focus();
+  const done=()=>{const v=parseFloat(inp.value.replace(/[^\d.]/g,''));const t=tgts();if(v>0)t[k]=v;else delete t[k];ls('tgts',t);paint();toast(v>0?k+' 목표 '+fmt(v,i.np):k+' 목표 지움 → 좌절 예측치');};
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')inp.blur();});inp.addEventListener('blur',done,{once:true});}
+function alerts(){const a=ls('alerts')||{};const R=[['stage','단계가 바뀌면 알림','하 탭에 있는 종목 기준'],['d30','좌절까지 D-30 알림',''],['d7','좌절까지 D-7 알림',''],['tgt','바 목표가에 닿으면 알림',''],['weekly','월요일 아침 요약','지난주 단계 변화 한 장']];
+  const d=sheet('<h2>알림 <span class="badge">준비 중</span></h2>'+R.map(([id,t,s])=>'<label class="row"><span>'+t+(s?'<br><small>'+s+'</small>':'')+'</span><input type="checkbox" class="tg" id="al_'+id+'" data-a="'+id+'"'+(a[id]?' checked':'')+'></label>').join('')+
+    '<p style="font-size:12px;color:var(--dim)">켜 둔 설정은 저장돼요. 알림 발송은 곧 붙어요.</p><button class="cta" data-close>완료</button>');
+  d.addEventListener('change',e=>{const id=e.target.dataset.a;if(!id)return;a[id]=e.target.checked;ls('alerts',a);paint();});}
+const LEGAL='<p style="font-size:12px;margin-top:14px"><button class="lk" data-legal="terms">이용약관</button> · <button class="lk" data-legal="privacy">개인정보처리방침</button></p>';
+const LEGAL_TXT={terms:'<h2>이용약관</h2><h4>1. 서비스</h4><p>하이먼 레이더(이하 서비스)는 공개된 과거·현재 시세를 하이먼 민스키 단계 모델과 과거 하락 사례 통계에 맞춰 보여주는 정보 제공 서비스입니다.</p>'+
+ '<h4>2. 투자 권유 아님</h4><p>서비스의 단계, 좌절 예측치(가격·시기), 범위, 확률은 통계적 추정이며 특정 종목의 매수·매도를 권유하거나 개인별 투자 자문을 하지 않습니다. 투자 판단과 그 결과의 책임은 이용자 본인에게 있습니다.</p>'+
+ '<h4>3. 정확성</h4><p>시세는 외부 자료를 받아 지연·누락·오류가 있을 수 있고, 추정은 자료가 바뀌면 달라집니다. 서비스는 정보의 정확성·완전성을 보증하지 않습니다.</p>'+
+ '<h4>4. 이용</h4><p>현재 모든 기능을 무료로 제공합니다. 유료 기능을 시작할 때는 요금과 조건을 미리 알리고 동의를 받습니다. 서비스 내용을 무단으로 복제·재배포할 수 없습니다.</p>'+
+ '<h4>5. 변경·중단</h4><p>서비스는 내용을 바꾸거나 중단할 수 있으며, 중요한 변경은 서비스 화면에 미리 알립니다.</p><p style="font-size:12px;color:var(--dim)">시행일 2026-11-25</p>',
+ privacy:'<h2>개인정보처리방침</h2><h4>1. 수집하는 정보</h4><p>서비스는 현재 회원가입·로그인 없이 운영되며 이름, 연락처, 계정 등 개인정보를 수집하지 않습니다.</p>'+
+ '<h4>2. 기기 저장</h4><p>고른 종목, 순서, 목표가, 보기 설정은 이용자의 기기(브라우저 저장소)에만 저장되며 서비스 서버로 전송되지 않습니다. 브라우저 데이터를 지우면 함께 지워집니다.</p>'+
+ '<h4>3. 외부 요청</h4><p>화면을 보여주기 위해 시세 파일(GitHub)과 글꼴(Google Fonts)을 불러오며, 이 과정에서 해당 업체에 접속 기록(IP 등)이 남을 수 있습니다.</p>'+
+ '<h4>4. 로그인을 열 때</h4><p>카카오·Apple 로그인을 시작하면 수집 항목·목적·보관 기간을 이 방침에 먼저 고지하고 동의를 받습니다.</p><p style="font-size:12px;color:var(--dim)">시행일 2026-11-25</p>'};
+function info(){const u=ls('user');sheet('<h2>사용법</h2>'+
+  '<h4>▦ 차트</h4><ul><li>240분·일·주·월·년 봉을 골라 봐요. 초록 점선이 목표가(안 정하면 좌절 예측치)예요.</li><li>테두리와 이름 색은 목표에 가까울수록 빨강→초록이에요. 아래 얇은 막대는 6개월 최고가에서 목표가까지 온 정도예요.</li><li>✎로 목표가를 정하고, 카드를 누르면 하이먼 상세가 열려요.</li></ul>'+
+  '<h4>≡ 바</h4><ul><li>막대 길이는 목표가까지 남은 거리예요. 6개월 최고가면 꽉 차고, 목표에 다가갈수록 오른쪽에서 왼쪽으로 깎여요.</li><li>오른쪽 큰 숫자는 목표까지 남은 %, 아래 바 메뉴 옆 숫자는 그 평균이에요.</li><li>✎를 눌러 목표가를 정해요.</li></ul>'+
+  '<h4>∿ 하</h4><ul><li>초록 곡선은 버블이 생기고 꺼지는 단계 모델이에요. 빨간 선은 실제 주가, <b style="color:var(--warn)">노란 점</b>이 지금이에요.</li>'+
+  '<li><b style="color:var(--bad)">빨간 점</b>은 새 논리(고점), <b style="color:var(--acc)">초록 점</b>은 좌절 예측치(과거 비슷한 급락 사례로 추정한 바닥 가격·연월)예요.</li><li>좌절까지 D-는 좌절 예측치 달까지 남은 날이에요. 카드를 누르면 근거가 보여요.</li><li>맨 위 "지금 시장은 어디쯤?"은 눌러서 접을 수 있어요.</li></ul>'+
+  '<h4>＋ 추가·순서·알림</h4><ul><li>탭마다 아래 ＋ 버튼으로 지표·대형주 '+D.items.length+'개 중에서 골라요.</li><li>카드를 꾹 눌러 끌면 순서가 바뀌어요. 보고 싶은 걸 맨 위로 올리세요.</li><li>🔔 알림(단계 변화·D-day·목표가)은 곧 열려요. 미리 켜 둘 수 있어요.</li><li>가입만 하면 차트·바·하 모두 코스피 1개씩 무료예요. 더할 때마다 1개당 월 990원, 무제한(알림 포함) 월 7,900원 예정이에요. 출시 기념으로 지금은 다 무료예요.</li></ul>'+
+  '<div class="row"><span>로그인 <small>카카오·Apple 곧 열려요. 설정은 이 기기에 저장돼요</small></span></div>'+LEGAL);}
+// 꾹 눌러 끌어서 순서 바꾸기 (0.45초 누르면 집힘, 그 전에 움직이면 스크롤)
+let lp=null,dragEl=null,moved=false,justDragged=0;
+document.addEventListener('pointerdown',e=>{const c=e.target.closest('.grid .card');if(!c||e.target.closest('button,input'))return;const x0=e.clientX,y0=e.clientY;
+  lp={c,x0,y0,t:setTimeout(()=>{dragEl=c;c.classList.add('drag');navigator.vibrate?.(15);},450)};});
+document.addEventListener('pointermove',e=>{if(!lp)return;if(!dragEl){if(Math.hypot(e.clientX-lp.x0,e.clientY-lp.y0)>8){clearTimeout(lp.t);lp=null;}return;}
+  e.preventDefault();moved=true;const o=document.elementFromPoint(e.clientX,e.clientY)?.closest('.grid .card');const g=dragEl.parentNode;
+  if(o&&o!==dragEl&&o.parentNode===g){const a=[...g.children],i=a.indexOf(dragEl),j=a.indexOf(o);g.insertBefore(dragEl,i<j?o.nextSibling:o);}},{passive:false});
+document.addEventListener('touchmove',e=>{if(dragEl)e.preventDefault();},{passive:false});
+const endDrag=()=>{if(lp)clearTimeout(lp.t);if(dragEl){const g=dragEl.parentNode;dragEl.classList.remove('drag');ls('list_'+g.dataset.list,[...g.children].map(c=>c.dataset.k));if(moved)justDragged=Date.now();dragEl=null;paint();}lp=null;moved=false;};
+document.addEventListener('pointerup',endDrag);document.addEventListener('pointercancel',endDrag);
+document.addEventListener('contextmenu',e=>{if(e.target.closest('.grid .card'))e.preventDefault();});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-login]');if(b){const u=b.dataset.login;ls('user',u||'');$('#login').hidden=true;if(u){ls('user','');toast(u+' 로그인은 곧 열려요. 지금은 로그인 없이 다 쓸 수 있어요');}if(!ls('seen')){ls('seen',1);setTimeout(info,300);}return;}
+  const lg=e.target.closest('[data-legal]');if(lg)return sheet(LEGAL_TXT[lg.dataset.legal]);
+  const tg=e.target.closest('[data-tgt]');if(tg)return editTgt(tg.dataset.tgt,tg);
+  const vb=e.target.closest('[data-vw]');if(vb){const k=vb.closest('[data-k]').dataset.k,vs=ls('views')||{};vs[k]=vb.dataset.vw;ls('views',vs);paint();return;}
+  const del=e.target.closest('[data-del]');if(del){const t=ls('tab')||'chart';ls('list_'+t,list(t).filter(x=>x!==del.dataset.del));paint();toast(del.dataset.del+' 뺌');return;}
+  const p=e.target.closest('[data-pick]');if(p)return picker(p.dataset.pick);
+  const c=e.target.closest('.grid .card');if(c&&Date.now()-justDragged>400&&!e.target.closest('input'))return detail(c.dataset.k);});
+$('nav').onclick=e=>{const b=e.target.closest('button');if(b)go(b.dataset.go);};
+$('#bell').onclick=alerts;$('#info').onclick=info;
+$('#built').textContent='기준 '+D.built+'.';$('#loginArt').innerHTML=model(heroDots(D.defaults.ha));
+paint();go(ls('tab')||'chart');
+// 실시간: 이 서비스의 1분 시세 파일(hyman-radar live 브랜치) + 비트코인은 업비트 직접. 받으면 "실시간 HH:MM 갱신"
+const RAW='https://raw.githubusercontent.com/andrewjhshin-debug/hyman-radar/live/m/',pad=n=>String(n).padStart(2,'0');
+const slot=k=>{const d=new Date(Date.now()+9*36e5-k*6e4);return d.getUTCFullYear()+pad(d.getUTCMonth()+1)+pad(d.getUTCDate())+pad(d.getUTCHours())+pad(d.getUTCMinutes());};
+function applyQ(sym,p,pv){const i=D.items.find(x=>x.sym===sym);if(!i||!(p>0))return false;i.npv=p;i.np=fmt(p,i.np);if(pv>0)i.chg=p/pv-1;
+  i.svg=i.svg.replace(/(<tspan class="np-v">)[^<]*/,'$1'+i.np).replace(/(<tspan class="np-lo"[^>]*data-lo="([^"]+)"[^>]*data-lf="([^"]+)"[^>]*>)[^<]*/,(a,b,lo,lf)=>{const r=Math.round((p/lo-1)*100);return b+'(전저 '+lf+', '+(r>=0?'+':'')+r+'%)';});return true;}
+function stamp(t){$('#stamp').textContent='실시간 '+t+' 갱신';}
+async function pollLive(){if(document.hidden)return;for(let k=1;k<=6;k++){try{const r=await fetch(RAW+slot(k)+'.json',{cache:'no-store'});if(!r.ok)continue;const j=await r.json();let n=0;
+  for(const x in j.q)if(!x.startsWith('upbit:'))n+=applyQ(x,j.q[x][0],j.q[x][1]);if(n)paint();stamp((j.t||'').slice(0,5));return;}catch(e){}}}
+async function pollUpbit(){if(document.hidden)return;try{const r=await fetch('https://api.upbit.com/v1/ticker?markets=KRW-BTC',{cache:'no-store'});if(!r.ok)return;const x=(await r.json())[0];
+  if(applyQ('upbit:KRW-BTC',x.trade_price,x.prev_closing_price))paint();}catch(e){}}
+pollLive();pollUpbit();setInterval(pollLive,60000);setInterval(pollUpbit,15000);document.addEventListener('visibilitychange',()=>{if(!document.hidden){pollLive();pollUpbit();}});if(ls('user')===null)$('#login').hidden=false;
+</script>

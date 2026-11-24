@@ -1,0 +1,13 @@
+index.html
+app.html
+ha.json
+adj_raw.json
+adj_log.json
+ha_extra_cache.json
+ecos.json
+livedir/
+site/
+.kis.json
+__pycache__/
+_patch_*.py
+플랜.html

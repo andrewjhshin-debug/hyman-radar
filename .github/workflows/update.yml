@@ -1,0 +1,58 @@
+name: update
+# 하이먼 레이더 자동 갱신. 작업 하나가 ~5시간 동안: 1분마다 시세(live 브랜치), 10분마다 화면(gh-pages).
+# 끝나면 다음 회차를 스스로 실행. 아래 cron 은 사슬이 끊겼을 때 다시 살리는 백업.
+on:
+  schedule:
+    - cron: "41 */2 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency: update
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      # 손떨방 재료(adj_raw.json)·추정 기록(adj_log.json)·한국은행 지표(ecos.json)를 회차 사이에 이어받기
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            adj_raw.json
+            adj_log.json
+            ecos.json
+          key: state-${{ github.run_id }}
+          restore-keys: state-
+      - name: 1분마다 시세, 10분마다 화면 — 약 5시간
+        run: |
+          git config --global user.name hyman-radar-bot
+          git config --global user.email hyman-radar-bot@users.noreply.github.com
+          REPO="https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+          for i in $(seq 0 279); do
+            if [ $((i % 10)) -eq 0 ] && { [ -z "$BPID" ] || ! kill -0 "$BPID" 2>/dev/null; }; then
+              (
+                python watch.py && python make_app.py || exit 0
+                rm -rf site && mkdir site && cp app.html site/index.html && cp manifest.json icon.png icon-192.png apple-touch-icon.png site/ && touch site/.nojekyll
+                (cd site && git init -q -b gh-pages && git add -A && git commit -qm "화면" && git push -qf "$REPO" gh-pages) || true
+              ) &
+              BPID=$!
+            fi
+            python watch.py --live || true
+            (cd livedir && rm -rf .git && git init -q -b live && git add -A && git commit -qm "시세" && git push -qf "$REPO" live) || true
+            sleep 50
+          done
+          wait
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: |
+            adj_raw.json
+            adj_log.json
+            ecos.json
+          key: state-${{ github.run_id }}
+      - name: 다음 회차 실행
+        if: always()
+        run: gh workflow run update.yml -R ${{ github.repository }}

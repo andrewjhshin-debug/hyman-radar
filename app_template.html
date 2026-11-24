@@ -243,7 +243,7 @@ paint();go(ls('tab')||'chart');
 const RAW='https://raw.githubusercontent.com/andrewjhshin-debug/hyman-radar/live/m/',pad=n=>String(n).padStart(2,'0');
 const slot=k=>{const d=new Date(Date.now()+9*36e5-k*6e4);return d.getUTCFullYear()+pad(d.getUTCMonth()+1)+pad(d.getUTCDate())+pad(d.getUTCHours())+pad(d.getUTCMinutes());};
 function applyQ(sym,p,pv){const i=D.items.find(x=>x.sym===sym);if(!i||!(p>0))return false;i.npv=p;i.np=fmt(p,i.np);if(pv>0)i.chg=p/pv-1;
-  i.svg=i.svg.replace(/(<tspan class="np-v">)[^<]*/,'$1'+i.np).replace(/(<tspan class="np-lo"[^>]*data-lo="([^"]+)"[^>]*data-lf="([^"]+)"[^>]*>)[^<]*/,(a,b,lo,lf)=>{const r=Math.round((p/lo-1)*100);return b+'(전저 '+lf+', '+(r>=0?'+':'')+r+'%)';});return true;}
+  i.svg=i.svg.replace(/(<tspan class="np-v">)[^<]*/,(a,b)=>b+i.np).replace(/(<tspan class="np-lo"[^>]*data-lo="([^"]+)"[^>]*data-lf="([^"]+)"[^>]*>)[^<]*/,(a,b,lo,lf)=>{const r=Math.round((p/lo-1)*100);return b+'(전저 '+lf+', '+(r>=0?'+':'')+r+'%)';});return true;}
 function stamp(t){$('#stamp').textContent='실시간 '+t+' 갱신';}
 async function pollLive(){if(document.hidden)return;for(let k=1;k<=6;k++){try{const r=await fetch(RAW+slot(k)+'.json',{cache:'no-store'});if(!r.ok)continue;const j=await r.json();let n=0;
   for(const x in j.q)if(!x.startsWith('upbit:'))n+=applyQ(x,j.q[x][0],j.q[x][1]);if(n)paint();stamp((j.t||'').slice(0,5));return;}catch(e){}}}
